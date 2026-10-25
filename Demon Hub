@@ -1,0 +1,146 @@
+
+-- DEMON HUB | Sliders de ESP e FOV
+-- Para usar dentro do script da interface anterior.
+
+local espDistance = 1200
+local fovSize = 120
+local fovTransparency = 50
+
+local function createSlider(name, minValue, maxValue, defaultValue, suffix, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -5, 0, 66)
+    container.BackgroundColor3 = Color3.fromRGB(17, 17, 20)
+    container.BorderSizePixel = 0
+    container.Parent = content
+
+    Instance.new("UICorner", container).CornerRadius =
+        UDim.new(0, 7)
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 0, 25)
+    label.Position = UDim2.fromOffset(10, 3)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.TextColor3 = Color3.fromRGB(240, 240, 245)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    local track = Instance.new("TextButton")
+    track.Size = UDim2.new(1, -20, 0, 12)
+    track.Position = UDim2.fromOffset(10, 40)
+    track.BackgroundColor3 = Color3.fromRGB(55, 45, 50)
+    track.Text = ""
+    track.AutoButtonColor = false
+    track.Parent = container
+
+    Instance.new("UICorner", track).CornerRadius =
+        UDim.new(1, 0)
+
+    local fill = Instance.new("Frame")
+    fill.BackgroundColor3 = Color3.fromRGB(210, 25, 48)
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+
+    Instance.new("UICorner", fill).CornerRadius =
+        UDim.new(1, 0)
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.fromOffset(16, 16)
+    knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.BorderSizePixel = 0
+    knob.Parent = track
+
+    Instance.new("UICorner", knob).CornerRadius =
+        UDim.new(1, 0)
+
+    local current = math.clamp(defaultValue, minValue, maxValue)
+    local dragging = false
+
+    local function update(value)
+        current = math.clamp(
+            math.floor(value + 0.5),
+            minValue,
+            maxValue
+        )
+
+        local alpha = (current - minValue) /
+            (maxValue - minValue)
+
+        fill.Size = UDim2.new(alpha, 0, 1, 0)
+        knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+        label.Text = name .. ": " .. current .. suffix
+
+        if callback then
+            callback(current)
+        end
+    end
+
+    local function setFromX(x)
+        local alpha = math.clamp(
+            (x - track.AbsolutePosition.X) /
+            track.AbsoluteSize.X,
+            0, 1
+        )
+
+        update(minValue + alpha * (maxValue - minValue))
+    end
+
+    track.Activated:Connect(function(input)
+        setFromX(input.Position.X)
+    end)
+
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            setFromX(input.Position.X)
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and (
+            input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch
+        ) then
+            setFromX(input.Position.X)
+        end
+    end)
+
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    update(current)
+    return function()
+        return current
+    end
+end
+
+section("ESP SETTINGS")
+
+createSlider("ESP Distance", 100, 1200, 1200, " studs",
+    function(value)
+        espDistance = value
+    end
+)
+
+section("FOV SETTINGS")
+
+createSlider("FOV Size", 10, 300, 120, " px",
+    function(value)
+        fovSize = value
+    end
+)
+
+createSlider("FOV Transparency", 0, 100, 50, "%",
+    function(value)
+        fovTransparency = value
+    end
+)
+
+print("Demon Hub: sliders carregados!")
